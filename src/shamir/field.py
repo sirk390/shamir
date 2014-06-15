@@ -6,6 +6,8 @@ def make_zp_value_type(modulus):
         def __init__(self, value):
             assert (0 <= value < modulus)
             self.value = value
+        def __neg__(self):
+            return ZpValue((-self.value) % modulus)
         def __add__(self, other):
             return ZpValue((self.value + other.value) % modulus)
         def __cmp__(self, other):
@@ -42,12 +44,15 @@ class ZpField(object):
         self.value_type = make_zp_value_type(self.modulus)
     def zero(self):
         return self.value_type(0)
+    def one(self):
+        return self.value_type(1)
 
 class ZpRandom(object):
     def __init__(self, zp_field):
         self.zp_field = zp_field
     def randitem(self):
         return self.zp_field.value_type(random.randint(0, self.zp_field.modulus-1))
+
 
 if __name__ == "__main__":
     field = ZpField(37)
