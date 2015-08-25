@@ -23,13 +23,13 @@ class TestShamir(unittest.TestCase):
                               FixedSequenceRandom([V(4), V(21), V(33)])) # 3 numbers are required for threshold=3
         shares = sharer.share(V(12), 3, [V(i+1) for i in range(numshares)])
         self.assertEquals(shares,
-                          [(V(1), V(33)), 
-                           (V(2), V(35)), 
-                           (V(3), V(31)), 
-                           (V(4), V(34)), 
-                           (V(5), V(20)), 
-                           (V(6), V(2)), 
-                           (V(7), V(30))])
+                          [(V(1), V(0)), 
+                           (V(2), V(30)), 
+                           (V(3), V(28)), 
+                           (V(4), V(31)), 
+                           (V(5), V(2)), 
+                           (V(6), V(15)), 
+                           (V(7), V(33))])
         
     def test_shamir_recombine_threshold3_shares4(self):
         field = ZpField(37)
