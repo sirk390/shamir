@@ -7,7 +7,7 @@ class SecretSharer():
    
     def share(self, secret, threshold, points):
         coef = [secret]
-        coef += [self.random.randitem() for j in range(threshold)]
+        coef += [self.random.randitem() for j in range(threshold-1)]
         p = Polynomial(list(reversed(coef)))
         shares = [(pt, p.evaluate(pt)) for pt in points]
         return shares

@@ -39,7 +39,7 @@ class TestShamir(unittest.TestCase):
         # Try to reconstruct the private key using the hex encoded shares.
         recombiner = SecretRecombiner(field)
         for i in range(10):
-            random4_hex = random.sample(shares_hex, threshold+1)
+            random4_hex = random.sample(shares_hex, threshold)
             random4_decoded = [decodehexstr(h) for h in random4_hex]
             random4 = [(V(base256decode(data[:sharenum_bytes])), V(base256decode(data[sharenum_bytes:]))) for data in random4_decoded]
             recombined_pkey_bignum = recombiner.recombine(random4, V(0))
@@ -48,9 +48,9 @@ class TestShamir(unittest.TestCase):
             k2.set_privkey_bignum(int(recombined_pkey_bignum))
             assert k2.get_pubkey() == pubkey
             print i
-        # With threshold shares this fails
+        # With threshold-1 shares this fails
         for i in range(10):
-            random4_hex = random.sample(shares_hex, threshold)
+            random4_hex = random.sample(shares_hex, threshold-1)
             random4_decoded = [decodehexstr(h) for h in random4_hex]
             random4 = [(V(base256decode(data[:sharenum_bytes])), V(base256decode(data[sharenum_bytes:]))) for data in random4_decoded]
             recombined_pkey_bignum = recombiner.recombine(random4, V(0))
