@@ -28,19 +28,27 @@ class SecretSharer(object):
 def encode_share(share_idx, values):
     """ values are values from 0 to 256 (just more than 1 byte) """
     res = pack('B', share_idx)
-    for group in iterslices(values, 8):
-        a = "".join(chr(b) for b in splitbase(joinbase(group, 257), 256))
-        #if len(group) != 8:  # last element does not have to be padded to 9 chars
-        a = ("\x00" * (9 - len(a)) + a)
-        res += a
+    for b in values:
+        if b == 0 or b == 256:
+            res += "\x00" + chr(0 if b == 0 else 1)
+        else:
+            res += chr(b)
     return res
 
 def decode_share(share):
     """ values are values from 0 to 256 (just more than 1 byte) """
     share_idx, = unpack('B', share[:1])
     values = []
-    for group in iterslices(share[1:], 9):
-        values += splitbase(joinbase([ord(c) for c in group], 256), 257)
+    escape = False
+    for c in share[1:]:
+        if c == "\x00" and not escape:
+            escape = True
+        else:
+            if escape:
+                values.append(0 if ord(c) == 0 else 256)
+                escape = False
+            else:
+                values.append(ord(c))
     return share_idx, values
 
 def share_string(secret_string, threshold, numshares):
@@ -67,18 +75,21 @@ def recombine_string(shares):
     return result
     
 if __name__ == "__main__":
+    import random
+    
     TEST_STR = "the quick brown fox jumps over the lazy dog"
     shares = share_string(TEST_STR, 3, 5)
     for s in shares:
         print s.encode("hex")
-    print [len(s) for s in shares], len(TEST_STR)
+
+    for i in range(100):
+        shares = share_string(TEST_STR, 3, 5)
+        samp = random.sample(shares, 3)
+        assert recombine_string(samp) == TEST_STR
     
-    shares2 = ["000028684ba2d1f18a530076ec6eeb3a7cf97b007c8cd8c0673d596500d48d8b585caf4f0800472a3f2c943a25a4e80b08",
-              "03007296cc11b2afdd90002ecba220e61dd5fa0091dfe310c8650a3d003ecd72e5d9db5b0200d0a6a5974a242da0e8fab9",
-              "0200aa751fcbe05423130056c2b468f4825a8e000ccbe6957449e86d00b8cbe99f5a15ee9700fe6b2a859f6bb28da869c6",
-              ]
-    print recombine_string(shares)
-    #print recombine_string([s.decode("hex") for s in shares])
-    #print decode_share('0000b534443c0f50a0e700f47669e0601b77bd00ddc3b04bbd10805d00ddbf33881051e8c40059f0847bc557f968bc31c6'.decode("hex"))
+    strs = [s.decode("hex") for s in ["0090b9e7ef2119bf791ce62df82068be278cc98338a341199de3a3c9c85a6d650882358ef3f98b686e7ca881",
+                                      "010572f3f16c6dd2bef170f26dd8f02936758cf5d7b037d7b893cc0123586afe80bd6b5a59356e94a601bfda",
+                                      "02d59489265170a231e8c0afd3950db14d21b9cdfc9157a5c1849b19895f69eadb180685a01723fdc8f5b471"]]
+    print recombine_string(strs)
 
 

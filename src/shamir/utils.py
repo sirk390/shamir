@@ -12,9 +12,10 @@ def iterslices(iterable, n):
     if current:
         yield current
 
-def joinbase(int_values, base=257):
-    result = int_values[0]
-    for v in int_values[1:]:
+def joinbase(iterable, base=32):
+    it = iter(iterable)
+    result = next(it)
+    for v in it:
         result = result * base + v
     return result
 
@@ -29,6 +30,7 @@ def splitbase(value, base=257):
 
 
 if __name__ == "__main__":
-    print splitbase(joinbase([255, 255, 255, 255, 255, 255, 255, 255], 257), 256)
+    print joinbase([1, 0, 1], 2)
+    #print splitbase(joinbase([255, 255, 255, 255, 255, 255, 255, 255], 257), 256)
     
-    print list(iterslices(range(18), 9))
+    #print list(iterslices(range(18), 9))
