@@ -1,9 +1,8 @@
 import unittest
 import itertools
-from shamir.sharer import SecretSharer
-from shamir.recombiner import SecretRecombiner
+from shamir.shamir import Shamir
 from shamir.field import ZpField
-from shamir.polynomial import Polynomial, LagrangePolynomial
+from shamir.polynomial import Polynomial, PointSet
 
 
 class TestPolynomial(unittest.TestCase):
@@ -39,7 +38,7 @@ class TestPolynomial(unittest.TestCase):
     
 class TestLagrangePolynomial(unittest.TestCase):
     def test_1(self):
-        p = LagrangePolynomial([(1.0, 3.0), (-1.0, 2.0), (2.0, -1.0)]).get_polynomial()
+        p = PointSet([(1.0, 3.0), (-1.0, 2.0), (2.0, -1.0)]).get_lagrange_polynomial()
         self.assertEquals( p, Polynomial([-1.5, 0.5, 4.0]))
         
 if __name__ == "__main__":

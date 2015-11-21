@@ -1,5 +1,6 @@
 import random
 from gcd import extended_gcd
+from random_source import SecureRandomSource
 
 def make_zp_value_type(modulus):
     class ZpValue(object):
@@ -39,20 +40,16 @@ def make_zp_value_type(modulus):
     
 class ZpField(object):
     """ZpZ field with the given modulus"""
-    def __init__(self, modulus=0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2FL):
+    def __init__(self, modulus=257, random_source=SecureRandomSource()):
         self.modulus = modulus
         self.value_type = make_zp_value_type(self.modulus)
+        self.random_source = random_source
     def zero(self):
         return self.value_type(0)
     def one(self):
         return self.value_type(1)
-
-class ZpRandom(object):
-    def __init__(self, zp_field):
-        self.zp_field = zp_field
-    def randitem(self):
-        return self.zp_field.value_type(random.randint(0, self.zp_field.modulus-1))
-
+    def random(self):
+        return self.value_type(self.random_source.randrange(0, self.modulus))
 
 if __name__ == "__main__":
     field = ZpField(37)

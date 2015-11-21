@@ -71,7 +71,7 @@ class Polynomial(object):
         strs = [(str(c) + repr_variable(d-i)) for i, c in enumerate(self.coefs)]
         return "<Polynomial:%s>" % ("+".join(strs))
     
-class LagrangePolynomial(object):
+class PointSet(object):
     def __init__(self, points, zero=0, one=1):
         self.points = points
         self.zero = zero
@@ -85,7 +85,7 @@ class LagrangePolynomial(object):
         for x, _y in self.points:
             yield x
             
-    def evaluate(self, x):
+    def evaluate_lagrange(self, x):
         """ Evaluation without computing the polynomial """
         vector = []
         for j, (x_j, y_j) in enumerate(self.points):
@@ -95,7 +95,7 @@ class LagrangePolynomial(object):
         return sum(map(operator.mul, self.iter_ys(), vector), self.zero)
     
 
-    def get_multiplier_polynomials(self):
+    def get_lagrange_multiplier_polynomials(self):
         multiplier_polynoms = []
         for j, (x_j, y_j) in enumerate(self.points):
             pols = []
@@ -105,9 +105,9 @@ class LagrangePolynomial(object):
             multiplier_polynoms.append(reduce(operator.mul, pols))
         return multiplier_polynoms
     
-    def get_polynomial(self):
+    def get_lagrange_polynomial(self):
         polys = []
-        for p, y in zip( self.get_multiplier_polynomials(), self.iter_ys()):
+        for p, y in zip( self.get_lagrange_multiplier_polynomials(), self.iter_ys()):
             polys.append(p * y)
         return reduce(operator.add, polys)
     

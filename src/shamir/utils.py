@@ -1,4 +1,5 @@
 
+
 def iterslices(iterable, n):
     """ Iterates over non-overlapping list of 'n' consecutive elements (python equivalent of each_slices).
         The last element might be smaller.
