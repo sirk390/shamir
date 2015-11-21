@@ -1,6 +1,5 @@
 import unittest
 import itertools
-from shamir.shamir import Shamir
 from shamir.field import ZpField
 from shamir.polynomial import Polynomial, PointSet
 

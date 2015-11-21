@@ -51,8 +51,3 @@ class ZpField(object):
     def random(self):
         return self.value_type(self.random_source.randrange(0, self.modulus))
 
-if __name__ == "__main__":
-    field = ZpField(37)
-    Z = field.value_type
-    a = Z(12)
-    print sum([Z(11), Z(23)], field.zero())

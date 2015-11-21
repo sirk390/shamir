@@ -1,6 +1,5 @@
 from polynomial import Polynomial, PointSet
 from field import ZpField
-from utils import iterslices, joinbase, splitbase
 from struct import pack, unpack
 from random_source import SecureRandomSource
 
@@ -72,24 +71,3 @@ class ShamirSharer(object):
         for shares in decoded_zp_shares:
             result += chr(self.sharer.recombine(zip(share_zp_indexes, shares), self.V(0)))
         return result
-        
-if __name__ == "__main__":
-    import random
-    
-    TEST_STR = "the quick brown fox jumps over the lazy dog"
-    shamir = ShamirSharer()
-    shares = shamir.share(TEST_STR, 3, 5)
-    for s in shares:
-        print s.encode("hex")
-
-    for i in range(100):
-        shares = shamir.share(TEST_STR, 3, 5)
-        samp = random.sample(shares, 3)
-        assert shamir.recombine(samp) == TEST_STR
-    
-    strs = [s.decode("hex") for s in ["0090b9e7ef2119bf791ce62df82068be278cc98338a341199de3a3c9c85a6d650882358ef3f98b686e7ca881",
-                                      "010572f3f16c6dd2bef170f26dd8f02936758cf5d7b037d7b893cc0123586afe80bd6b5a59356e94a601bfda",
-                                      "02d59489265170a231e8c0afd3950db14d21b9cdfc9157a5c1849b19895f69eadb180685a01723fdc8f5b471"]]
-    print shamir.recombine(strs)
-
-

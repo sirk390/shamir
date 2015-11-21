@@ -12,10 +12,3 @@ class UnitTestRandomSource(object):
     def randrange(self, start, end):
         return next(self.iter)
 
-if __name__ == "__main__":
-    r = UnitTestRandomSource(range(100))
-    print r.randint(0, 2)
-    print r.randint(0, 2)
-    print r.randint(0, 2)
-    print r.randint(0, 2)
-    

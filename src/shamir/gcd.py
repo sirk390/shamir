@@ -14,9 +14,3 @@ def extended_gcd(n1, n2):
     return (bezout_a, bezout_b, gcd)
 
 
-if __name__ == "__main__":
-    import unittest
-    
-            
-    unittest.main()
-    

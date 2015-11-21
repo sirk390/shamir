@@ -110,4 +110,4 @@ class PointSet(object):
         for p, y in zip( self.get_lagrange_multiplier_polynomials(), self.iter_ys()):
             polys.append(p * y)
         return reduce(operator.add, polys)
-    
+
