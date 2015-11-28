@@ -1,4 +1,4 @@
-from shamir.gcd import extended_gcd
+from shamir.extended_gcd import extended_gcd
 import unittest
 
 

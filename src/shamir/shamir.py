@@ -67,6 +67,10 @@ def remove_padding(str):
 
 
 class ShamirStringSharer(object):
+    """ Share and recombine bytestrings by sharing each character separately in GF(257)
+        The resulting integers [0-256] are then returned as a bytestring except for 0 and 256 
+        that are respectively escaped as '\x00\x00' and '\x00\x01'
+    """ 
     def __init__(self, random_source=SecureRandomSource()):
         self.P = 4294967311 # first prime larger than 2**32
         self.field = ZpField(self.P, random_source=random_source)

@@ -1,5 +1,5 @@
 import random
-from gcd import extended_gcd
+from extended_gcd import extended_gcd
 from random_source import SecureRandomSource
 
 def make_zp_value_type(modulus):
