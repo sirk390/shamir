@@ -28,59 +28,43 @@ class ShamirPointSharer(object):
 class EncodingError(Exception):
     pass
 
-def pack_shareidx(value):
-    """ Same encoding as bitcoin variable size integers """ 
+def pack_varint(value):
+    """ Pack an integer in such a way that small values take less space (similar to bitcoin encoding but big-endian) """ 
     if (value < 0xfd):
-        return (struct.pack("<B", value))
+        return (struct.pack("B", value))
     if (value <= 0xffff):
-        return ("\xfd" + struct.pack("<H", value))
+        return ("\xfd" + struct.pack(">H", value))
     if (value <= 0xffffffff):
-        return ("\xfe" + struct.pack("<I", value))
-    return ("\xff" + struct.pack("<Q", value))
+        return ("\xfe" + struct.pack(">I", value))
+    return ("\xff" + struct.pack(">Q", value))
         
-def unpack_shareidx(data, cursor=0):
-    """ Same encoding as bitcoin variable size integers """ 
-    prefix = struct.unpack_from("<B", data, cursor)[0]
+def unpack_varint(data, cursor=0):
+    """ unpack a integer packed by pack_varint """ 
+    prefix = struct.unpack_from(">B", data, cursor)[0]
     cursor += 1
     if (prefix < 0xFD):
         return (prefix, cursor)
     if (len(data) - cursor < {0xFD: 2, 0xFE: 4, 0xFF: 8}[prefix]):
         raise EncodingError("Decoding error: not enough data: %d" % (prefix))
     if (prefix == 0xFD):
-        return (struct.unpack_from("<H", data, cursor)[0], cursor + 2)
+        return (struct.unpack_from(">H", data, cursor)[0], cursor + 2)
     if (prefix == 0xFE):
-        return (struct.unpack_from("<I", data, cursor)[0], cursor + 4)
-    return (struct.unpack_from("<Q", data, cursor)[0], cursor + 8)
+        return (struct.unpack_from(">I", data, cursor)[0], cursor + 4)
+    return (struct.unpack_from(">Q", data, cursor)[0], cursor + 8)
 
 
-def encode_share(share_idx, values):
-    """ values from 2**32 to P=4294967311 take 5 bytes """
-    resbytes = []
-    for b in values:
-        if b >= 0xffffffff:
-            resbytes += [0xff, 0xff, 0xff, 0xff, b - 2**32 + 1]
-        else:
-            sp = splitbase(b, 256)
-            resbytes += [0] * (4-len(sp))
-            resbytes += sp
-    return pack_shareidx(share_idx) + "".join(chr(b) for b in resbytes)
+def add_padding(str, size=4):
+    """ Pad the end of a string to make the length a multiple of 'size'.
+     The byte contains the number of characters to remove, to remove the padding.  
+     """ 
+    nbpad = size - (len(str) % size) 
+    return str + (chr(nbpad) * nbpad)
 
-def decode_share(share):
-    """ values from 2**32 to P=4294967311 take 5 bytes """
-    share_idx, cursor= unpack_shareidx(share)
-    values = []
-    current = []
-    chrcodes = collections.deque(ord(c) for c in share[cursor:])
-    while current or chrcodes:
-        if chrcodes:
-            current.append(chrcodes.popleft())
-        if len(current) == 4 and current != [0xff,0xff,0xff,0xff]:
-            values.append(joinbase(current, 256))
-            current = []
-        elif len(current) == 5:
-            values.append(2**32 + current[4] - 1)
-            current = []
-    return share_idx, values
+def remove_padding(str):
+    """ Remove padding added using 'add_padding' """ 
+    nbpad = ord(str[-1])
+    return str[:-nbpad]
+
 
 class ShamirStringSharer(object):
     def __init__(self, random_source=SecureRandomSource()):
@@ -94,16 +78,16 @@ class ShamirStringSharer(object):
         assert threshold <= numshares, "threshold (%s) must be smaller or equal to numshares(%s)" % (threshold, numshares)
         all_shares = []
         
-        bytevalues = [ord(c) for c in secret_string]
+        bytevalues = [ord(c) for c in add_padding(secret_string)]
         intvalues = [joinbase(fourbytes, 256) for fourbytes in iterslices(bytevalues, 4)]
         for i in intvalues:
             shares = self.sharer.share(self.V(i), threshold, [self.V(n+1) for n in range(numshares)])
             share_values = [value for idx, value in shares]
             all_shares.append(share_values)
-        return [encode_share(idx, [s.value for s in shares]) for idx, shares in enumerate(zip(*all_shares))]
+        return [self.encode_share(idx, [s.value for s in shares]) for idx, shares in enumerate(zip(*all_shares))]
         
     def recombine(self, shares):
-        decoded_shares = [decode_share(s) for s in shares]
+        decoded_shares = [self.decode_share(s) for s in shares]
         share_zp_indexes = [self.V(share_idx+1) for share_idx, values in decoded_shares]
         decoded_zp_shares = zip(*[[self.V(v) for v in values] for share_idx, values in decoded_shares])
         intvalues = []
@@ -113,16 +97,58 @@ class ShamirStringSharer(object):
         for i in intvalues:
             fourbytes = splitbase(i, 256)
             bytevalues += [0] * (4 - len(fourbytes)) + fourbytes
-        return "".join(chr(b) for b in bytevalues)
+        return remove_padding("".join(chr(b) for b in bytevalues))
 
-if __name__ == '__main__':
-    import random
-    shamir = ShamirStringSharer()
-    results = shamir.share("hhaiabcd", 401, 1000)
+    
+    def encode_share_values(self, values):
+        """ Encodes list of values between 0 and P=4294967311 (smallest prime above 2**32) to bytestrings
+            Values from 0 to 2**32-2 take 4 bytes, values above take 5 bytes.
+        """
+        resbytes = []
+        for b in values:
+            if b >= 0xffffffff:
+                resbytes += [0xff, 0xff, 0xff, 0xff, b - 2**32 + 1]
+            else:
+                sp = splitbase(b, 256)
+                resbytes += [0] * (4-len(sp))
+                resbytes += sp
+        return "".join(chr(b) for b in resbytes)
+        
+    def encode_share(self, share_idx, values):
+        return pack_varint(share_idx) + self.encode_share_values(values)
+    
+    def decode_share_values(self, data):
+        """ values from 2**32 to P=4294967311 take 5 bytes """
+        values = []
+        current = []
+        chrcodes = collections.deque(ord(c) for c in data)
+        while current or chrcodes:
+            if chrcodes:
+                current.append(chrcodes.popleft())
+            if len(current) == 4 and current != [0xff,0xff,0xff,0xff]:
+                values.append(joinbase(current, 256))
+                current = []
+            elif len(current) == 5:
+                values.append(2**32 + current[4] - 1)
+                current = []
+        return values
+    
+    def decode_share(self, share):
+        share_idx, cursor= unpack_varint(share)
+        values = self.decode_share_values(share[cursor:])
+        return share_idx, values
     
 
+if __name__ == '__main__':
+
+    import random
+    shamir = ShamirStringSharer()
+    results = shamir.share("hhazeezezzeiokjgtroitrj itiijtr", 3, 10)
+    
+    for r in results:
+        print r.encode("hex")
     #random.sample(results, 400)
-    print shamir.recombine(random.sample(results, 401))
+    print shamir.recombine(random.sample(results, 3))
     
     exit()
     #print pack_shareidx(10).encode("hex")

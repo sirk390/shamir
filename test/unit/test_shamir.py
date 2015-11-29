@@ -1,10 +1,9 @@
 import unittest
-import itertools
-from shamir.shamir import ShamirPointSharer, ShamirSharer, decode_share
+from shamir.shamir import ShamirPointSharer, ShamirStringSharer, pack_varint,\
+    unpack_varint
 from shamir.field import ZpField
 from shamir.polynomial import Polynomial
 from shamir.random_source import UnitTestRandomSource
-import collections
 
 
 class TestShamir(unittest.TestCase):
@@ -95,49 +94,24 @@ class TestShamir(unittest.TestCase):
                                    (V(4), V(28))], x_recomb=V(0))
         
         self.assertEquals(secret, V(4))
-
-    def test_Shamir_WhenSharing1Byte2OutOf3_ShamirProvidesPerfectSecrecy(self):
-        """ Tests perfect secrecy for 1 shared byte, and k=2, n=3.
-         
-            When iterating over all possible random values and encoding each possible output, yields all combination once, 
-            thus the algorithm provides perfect secrecy if the random source is secure.
-        """
-        shamir = ShamirSharer( random_source=UnitTestRandomSource(itertools.cycle(range(257))))
-        
-        share1_counts = collections.Counter()
-        share2_counts = collections.Counter()
-        share3_counts = collections.Counter()
-
-        for b in range(256): # iterate over all encodable byte values
-            for r in range(257): # iterate over all random values 
-                sharedbyte = shamir.share(chr(b), 2, 3)
-                share1_counts[(b, decode_share(sharedbyte[0])[1][0])] += 1
-                share2_counts[(b, decode_share(sharedbyte[1])[1][0])] += 1
-                share3_counts[(b, decode_share(sharedbyte[2])[1][0])] += 1
-
-        for b in range(256): # iterate over all encodable byte values
-            for r in range(257): # iterate over all random values 
-                self.assertEquals(share1_counts[(b, r)], 1)
-                self.assertEquals(share2_counts[(b, r)], 1)
-                self.assertEquals(share3_counts[(b, r)], 1)
         
     def test_shamir_share_string(self):
-        shamir = ShamirSharer( random_source=UnitTestRandomSource(range(50)))
+        shamir = ShamirStringSharer( random_source=UnitTestRandomSource(range(50)))
         
         shared_strings = shamir.share("the quick brown fox jumps over the lazy dog", 2, 3)
         shared_strings_hex = [e.encode("hex") for e in shared_strings]
         
         self.assertEquals(shared_strings_hex, 
-                          ["0074696723757a6f6a73296c7d7b847c2f76808a337e8a83878b398991818f3e938886428f859f9f478c9891",
-                           "01746a6926797f75717b32768887918a3e86919c46929f999ea352a3ac9dac5cb2a8a764b2a9c4c56eb4c1bb",
-                           "02746b6b297d847b78833b8093939e984d96a2ae59a6b4afb5bb6bbdc7b9c97ad1c8c886d5cde9eb95dceae5"])
+                          ["0074686520717569646b2062746f776e23666f78246a756d7573206f7c6572207b68652074617a7929646f670b",
+                           "0174686520717569656b2062766f776e26666f78286a756d7a73206f82657220826865207c617a7932646f6715",
+                           "0274686520717569666b2062786f776e29666f782c6a756d7f73206f886572208968652084617a793b646f671f"])
         
     def test_Shamir_ShareString2OutOf3_ResultIsFixed(self):
         """ testcase from fake random 2 out of 3"""
-        shamir = ShamirSharer()
+        shamir = ShamirStringSharer()
         
-        data = ["0074696723757a6f6a73296c7d7b847c2f76808a337e8a83878b398991818f3e938886428f859f9f478c9891",
-                "01746a6926797f75717b32768887918a3e86919c46929f999ea352a3ac9dac5cb2a8a764b2a9c4c56eb4c1bb"]
+        data = ["0074686520717569646b2062746f776e23666f78246a756d7573206f7c6572207b68652074617a7929646f670b",
+                "0174686520717569656b2062766f776e26666f78286a756d7a73206f82657220826865207c617a7932646f6715"]
     
         result =  shamir.recombine([i.decode("hex") for i in data])
         
@@ -145,10 +119,10 @@ class TestShamir(unittest.TestCase):
 
     def test_Shamir_WhenSharingString2OutOf3WithFakeRandomAndGiven2Shares_ResultIsCorrect(self):
         """ testcase from fake random 2 out of 3 (2 other values)"""
-        shamir = ShamirSharer()
+        shamir = ShamirStringSharer()
         
-        data = ["01746a6926797f75717b32768887918a3e86919c46929f999ea352a3ac9dac5cb2a8a764b2a9c4c56eb4c1bb",
-                "02746b6b297d847b78833b8093939e984d96a2ae59a6b4afb5bb6bbdc7b9c97ad1c8c886d5cde9eb95dceae5"]
+        data = ["0174686520717569656b2062766f776e26666f78286a756d7a73206f82657220826865207c617a7932646f6715",
+                "0274686520717569666b2062786f776e29666f782c6a756d7f73206f886572208968652084617a793b646f671f"]
     
         result =  shamir.recombine([i.decode("hex") for i in data])
         
@@ -156,16 +130,81 @@ class TestShamir(unittest.TestCase):
 
     def test_Shamir_WhenSharingString2OutOf3WithRealRandomAndGiven3Shares_ResultIsCorrect(self):
         """ testcase created with real random """
-        shamir = ShamirSharer()
-        
-        data = ["0090b9e7ef2119bf791ce62df82068be278cc98338a341199de3a3c9c85a6d650882358ef3f98b686e7ca881",
-                "010572f3f16c6dd2bef170f26dd8f02936758cf5d7b037d7b893cc0123586afe80bd6b5a59356e94a601bfda",
-                "02d59489265170a231e8c0afd3950db14d21b9cdfc9157a5c1849b19895f69eadb180685a01723fdc8f5b471"]
+        shamir = ShamirStringSharer()
+
+        data = ["00088e5d07bd3cf928c01870bdad820e3c89cd4c91f6712e0203b83e5aa1b2aa4a97b2b7b9f959822a80b5c22c",
+                "019cb454fd090488de15107ef9eb8cae58ad2b2102826cee8594500d4dddf33420c7004f0691388b259cfc1d57",
+                "0230da4ce454cc18a36a088d4429974e65d088f5730e68af0824e7dc311a33bde7f64de65329179420b9427882"]
     
         result =  shamir.recombine([i.decode("hex") for i in data])
         
         self.assertEquals(result, "the quick brown fox jumps over the lazy dog")
 
+    def test_Shamir_EncodeShareValues(self):
+        shamir = ShamirStringSharer()
+
+        self.assertEquals(shamir.encode_share_values([0]).encode("hex"), "00000000")
+        self.assertEquals(shamir.encode_share_values([1]).encode("hex"), "00000001")
+        self.assertEquals(shamir.encode_share_values([1000]).encode("hex"), "000003e8")
+        self.assertEquals(shamir.encode_share_values([1000000]).encode("hex"), "000f4240")
+        self.assertEquals(shamir.encode_share_values([2**32-1]).encode("hex"), "ffffffff00")
+        self.assertEquals(shamir.encode_share_values([2**32]).encode("hex"), "ffffffff01")
+        self.assertEquals(shamir.encode_share_values([2**32+10]).encode("hex"), "ffffffff0b")
+        self.assertEquals(shamir.encode_share_values([2**32+40]).encode("hex"), "ffffffff29")
+        self.assertEquals(shamir.encode_share_values([1000, 2**32+40]).encode("hex"), "000003e8ffffffff29")
+        self.assertEquals(shamir.encode_share_values([0, 1, 1000, 2**32-2, 2**32-1, 2**32+40]).encode("hex"), "0000000000000001000003e8fffffffeffffffff00ffffffff29")
+        self.assertEquals(shamir.encode_share_values([ 2**32+40, 0, 2**32-1, 1, 1000, 2**32-2]).encode("hex"), "ffffffff2900000000ffffffff0000000001000003e8fffffffe")
+        
+
+    def test_Shamir_DecodeShareValues(self):
+        shamir = ShamirStringSharer()
+
+        self.assertEquals(shamir.decode_share_values('00000000'.decode("hex")), [0])
+        self.assertEquals(shamir.decode_share_values('000003e8'.decode("hex")), [1000])
+        self.assertEquals(shamir.decode_share_values('000f4240'.decode("hex")), [1000000])
+        self.assertEquals(shamir.decode_share_values('ffffffff00'.decode("hex")), [2**32-1])
+        self.assertEquals(shamir.decode_share_values('ffffffff01'.decode("hex")), [2**32])
+        self.assertEquals(shamir.decode_share_values('ffffffff0b'.decode("hex")), [2**32+10])
+        self.assertEquals(shamir.decode_share_values('ffffffff29'.decode("hex")), [2**32+40])
+        self.assertEquals(shamir.decode_share_values('000003e8ffffffff29'.decode("hex")), [1000, 2**32+40])
+        self.assertEquals(shamir.decode_share_values('0000000000000001000003e8fffffffeffffffff00ffffffff29'.decode("hex")), [0, 1, 1000, 2**32-2, 2**32-1, 2**32+40])
+        self.assertEquals(shamir.decode_share_values('ffffffff2900000000ffffffff0000000001000003e8fffffffe'.decode("hex")), [2**32+40, 0, 2**32-1, 1, 1000, 2**32-2])
+
+
+    def test_Shamir_PackVarInt(self):
+        self.assertEquals(pack_varint(0).encode("hex"), "00")
+        self.assertEquals(pack_varint(1).encode("hex"), "01")
+        self.assertEquals(pack_varint(100).encode("hex"), "64")
+        self.assertEquals(pack_varint(200).encode("hex"), "c8")
+        self.assertEquals(pack_varint(252).encode("hex"), "fc")
+        self.assertEquals(pack_varint(253).encode("hex"), "fd00fd")
+        self.assertEquals(pack_varint(254).encode("hex"), "fd00fe")
+        self.assertEquals(pack_varint(255).encode("hex"), "fd00ff")
+        self.assertEquals(pack_varint(256).encode("hex"), "fd0100")
+        self.assertEquals(pack_varint(65535).encode("hex"), "fdffff")
+        self.assertEquals(pack_varint(65536).encode("hex"), "fe00010000")
+        self.assertEquals(pack_varint(2**32-1).encode("hex"), "feffffffff")
+        self.assertEquals(pack_varint(2**32).encode("hex"), "ff0000000100000000")
+        self.assertEquals(pack_varint(2**32+1000000000).encode("hex"), "ff000000013b9aca00")
+
+    def test_Shamir_UnpackVarInt(self):
+        self.assertEquals(unpack_varint("00".decode("hex")), (0, 1)) # returns (value, nbparsed)
+        self.assertEquals(unpack_varint("01".decode("hex")), (1, 1))
+        self.assertEquals(unpack_varint("64".decode("hex")), (100, 1))
+        self.assertEquals(unpack_varint("c8".decode("hex")), (200, 1))
+        self.assertEquals(unpack_varint("fc".decode("hex")), (252, 1))
+        self.assertEquals(unpack_varint("fd00fd".decode("hex")), (253, 3))
+        self.assertEquals(unpack_varint("fd00fe".decode("hex")), (254, 3))
+        self.assertEquals(unpack_varint("fd00ff".decode("hex")), (255, 3))
+        self.assertEquals(unpack_varint("fd0100".decode("hex")), (256, 3))
+        self.assertEquals(unpack_varint("fdffff".decode("hex")), (65535, 3))
+        self.assertEquals(unpack_varint("fe00010000".decode("hex")), (65536, 5))
+        self.assertEquals(unpack_varint("feffffffff".decode("hex")), (2**32-1, 5))
+        self.assertEquals(unpack_varint("ff0000000100000000".decode("hex")), (2**32, 9))
+        self.assertEquals(unpack_varint("ff000000013b9aca00".decode("hex")), (2**32+1000000000, 9))
+
+        
+    
 
 if __name__ == "__main__":
     unittest.main()
