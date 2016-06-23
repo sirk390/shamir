@@ -14,7 +14,7 @@ class TestShamirSlow(unittest.TestCase):
         
         shared_strings = shamir.share("abcd", 500, 1000)
         shared_strings_hex = [e.encode("hex") for e in shared_strings]
-        
+        print len(shared_strings)
         self.assertEquals(shared_strings_hex[-3:], 
                           ["fd03e5fb1f47b53999f54a",
                            "fd03e60142cc5c6b6db0bd",
