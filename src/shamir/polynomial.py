@@ -1,5 +1,6 @@
 import operator
 import itertools
+from functools import reduce
 
 class Polynomial(object):
     def __init__(self, coefs, zero=0):
@@ -44,11 +45,11 @@ class Polynomial(object):
         else:
             return Polynomial([c * other for c in self.coefs], self.zero)
 
-    def __div__(self, other):
+    def __floordiv__(self, other):
         if type(other) is Polynomial:
             raise NotImplemented()
         else:
-            return Polynomial([c / other for c in self.coefs], self.zero)
+            return Polynomial([c // other for c in self.coefs], self.zero)
         
     @classmethod
     def from_roots(cls, roots):
@@ -101,7 +102,7 @@ class PointSet(object):
             pols = []
             for i, x_i in enumerate(self.iter_xs()):
                 if i != j:
-                    pols.append(Polynomial([self.one, -x_i], self.zero) / (x_j - x_i))
+                    pols.append(Polynomial([self.one, -x_i], self.zero) // (x_j - x_i))
             multiplier_polynoms.append(reduce(operator.mul, pols))
         return multiplier_polynoms
     

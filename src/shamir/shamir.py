@@ -150,19 +150,19 @@ if __name__ == '__main__':
     results = shamir.share("hhazeezezzeiokjgtroitrj itiijtr", 3, 10)
     
     for r in results:
-        print r.encode("hex")
+        print (r.encode("hex"))
     #random.sample(results, 400)
-    print shamir.recombine(random.sample(results, 3))
+    print (shamir.recombine(random.sample(results, 3)))
     
     exit()
     #print pack_shareidx(10).encode("hex")
-    print encode_share(2, [142424242, 4294967295]).encode("hex")
-    print encode_share(0, [424242, 4294967296]).encode("hex")
-    print encode_share(0, [424242, 4294967310]).encode("hex")
+    print (encode_share(2, [142424242, 4294967295]).encode("hex"))
+    print (encode_share(0, [424242, 4294967296]).encode("hex"))
+    print (encode_share(0, [424242, 4294967310]).encode("hex"))
     
-    print decode_share("0000067932ffffffff00".decode("hex"))
+    print (decode_share("0000067932ffffffff00".decode("hex")))
     
-    print 2**32
+    print (2**32)
     #print joinbase([255, 256, 256, 256], 256)
     
     

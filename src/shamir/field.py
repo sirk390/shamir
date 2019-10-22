@@ -1,6 +1,6 @@
 import random
-from extended_gcd import extended_gcd
-from random_source import SecureRandomSource
+from shamir.extended_gcd import extended_gcd
+from shamir.random_source import SecureRandomSource
 
 def make_zp_value_type(modulus):
     class ZpValue(object):
@@ -32,7 +32,7 @@ def make_zp_value_type(modulus):
                 raise ZeroDivisionError()
             bezout_a, _, _ = extended_gcd(self.value, modulus)
             return ZpValue(bezout_a % modulus)
-        def __div__(self, other):
+        def __floordiv__(self, other):
             return self * ~other
         def __int__(self):
             return self.value
